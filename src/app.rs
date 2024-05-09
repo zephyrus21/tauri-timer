@@ -1,9 +1,14 @@
 use gloo_timers::callback::Timeout;
 use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
-use crate::components::timer_display::TimerDisplay;
+use crate::{
+    components::{timer_controls::TimerControls, timer_display::TimerDisplay},
+    helpers::format_time,
+};
 
 #[wasm_bindgen]
 extern "C" {
@@ -12,8 +17,8 @@ extern "C" {
 }
 
 #[derive(Serialize, Deserialize)]
-struct GreetArgs<'a> {
-    name: &'a str,
+struct SetTitleArgs<'a> {
+    title: &'a str,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -21,6 +26,32 @@ pub enum TimerState {
     Paused,
     Running,
     Break,
+}
+
+fn get_tray_title(timer_state: TimerState, timer_duration: u32, session_length: u32) -> String {
+    match timer_state {
+        TimerState::Paused => "Paused".to_string(),
+        TimerState::Running => {
+            if timer_duration > session_length {
+                format!("Session finished: {}", format_time(timer_duration))
+            } else {
+                format!(
+                    "Session in progress: {}",
+                    format_time(session_length - timer_duration)
+                )
+            }
+        }
+        TimerState::Break => {
+            if timer_duration > session_length {
+                format!("Break finished: {}", format_time(timer_duration))
+            } else {
+                format!(
+                    "Break in progress: {}",
+                    format_time(session_length - timer_duration)
+                )
+            }
+        }
+    }
 }
 
 #[function_component(App)]
@@ -44,9 +75,18 @@ pub fn app() -> Html {
                 }
             });
 
-            move || timeout.cancel();
+            let (timer_duration, timer_state, session_length) = props.clone();
 
-            // let (timer_duration, timer_state, session_length) = props.clone();
+            spawn_local(async move {
+                let args = to_value(&SetTitleArgs {
+                    title: &get_tray_title(*timer_state, *timer_duration, *session_length),
+                })
+                .unwrap();
+
+                invoke("set_title", args).await;
+            });
+
+            move || timeout.cancel();
         },
     );
 
@@ -57,6 +97,18 @@ pub fn app() -> Html {
                 timer_duration={timer_duration.clone()}
                 session_length={session_length.clone()}
             />
+            <TimerControls
+                timer_state={timer_state.clone()}
+                timer_duration={timer_duration.clone()}
+                session_length={session_length.clone()}
+            />
         </main>
     }
 }
+
+// {
+//     let id = some_dep.id(); // Have to extract it in advance, some_dep is moved already in the second argument
+//     use_effect_with_dep(move |_| { todo!(); drop(some_dep); }, id);
+// }
+
+// use_effect_with(some_dep.id(), move |_| { todo!(); drop(some_dep); });

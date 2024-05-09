@@ -2,8 +2,6 @@ use yew::prelude::*;
 
 use crate::{app::TimerState, helpers::format_time};
 
-// use self::_Props::timer_state; <- fucking piece of auto shit
-
 #[derive(Clone, Properties, PartialEq)]
 pub struct Props {
     pub timer_state: UseStateHandle<TimerState>,

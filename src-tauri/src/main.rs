@@ -1,12 +1,14 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{Manager, SystemTray, SystemTrayEvent};
+use tauri::{AppHandle, Manager, SystemTray, SystemTrayEvent};
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+async fn set_title(app_handle: AppHandle, title: String) {
+    if let Err(err) = app_handle.tray_handle().set_title(&title) {
+        eprintln!("Error setting title: {:?}", err);
+    }
 }
 
 fn main() {
@@ -33,7 +35,7 @@ fn main() {
             }
             _ => {}
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![set_title])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
