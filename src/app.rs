@@ -1,9 +1,9 @@
 use gloo_timers::callback::Timeout;
 use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
+
+use crate::components::timer_display::TimerDisplay;
 
 #[wasm_bindgen]
 extern "C" {
@@ -52,7 +52,11 @@ pub fn app() -> Html {
 
     html! {
         <main class={classes!("flex", "flex-col", "items-center", "justify-center", "h-screen")}>
-            {"Welcome guys!!!"}
+            <TimerDisplay
+                timer_state={timer_state.clone()}
+                timer_duration={timer_duration.clone()}
+                session_length={session_length.clone()}
+            />
         </main>
     }
 }
